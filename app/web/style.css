@@ -727,12 +727,33 @@ h4 {
 }
 
 .ingest-status {
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
     border-radius: var(--radius);
     margin-bottom: 14px;
     border: 1px solid var(--border);
     background: var(--bg-secondary);
+}
+
+.status-loading {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.status-compiling {
+    color: #7c3aed;
+    border-color: #7c3aed;
+    background: #f3f0ff;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.status-loading, .status-compiling {
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 #ingest-history {

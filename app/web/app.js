@@ -219,7 +219,7 @@ function setupURLIngest() {
 }
 
 async function uploadFile(file, subdir) {
-    showIngestStatus(`Ingesting ${file.name}...`);
+    showIngestStatus("Ingesting " + file.name + "...", "loading");
     const formData = new FormData();
     formData.append("file", file);
     formData.append("subdir", subdir);
@@ -229,17 +229,17 @@ async function uploadFile(file, subdir) {
         const data = await res.json();
         if (data.ok) {
             addIngestEntry(data);
-            showIngestStatus(`Ingested: ${data.filename}`, "ok");
+            onIngestSuccess(data);
         } else {
-            showIngestStatus(`Error: ${data.error}`, "err");
+            showIngestStatus("Error: " + data.error, "err");
         }
     } catch (err) {
-        showIngestStatus(`Failed: ${err.message}`, "err");
+        showIngestStatus("Failed: " + err.message, "err");
     }
 }
 
 async function ingestURL(url, subdir) {
-    showIngestStatus(`Ingesting URL...`);
+    showIngestStatus("Fetching and ingesting URL...", "loading");
     try {
         const res = await fetch("/api/ingest/url", {
             method: "POST",
@@ -249,20 +249,69 @@ async function ingestURL(url, subdir) {
         const data = await res.json();
         if (data.ok) {
             addIngestEntry(data);
-            showIngestStatus(`Ingested: ${data.filename}`, "ok");
+            onIngestSuccess(data);
         } else {
-            showIngestStatus(`Error: ${data.error}`, "err");
+            showIngestStatus("Error: " + data.error, "err");
         }
     } catch (err) {
-        showIngestStatus(`Failed: ${err.message}`, "err");
+        showIngestStatus("Failed: " + err.message, "err");
     }
+}
+
+function onIngestSuccess(data) {
+    showIngestStatus(
+        "Ingested: " + data.filename + ". Compiling wiki pages...",
+        "compiling"
+    );
+    // Poll wiki tree every 5s to detect when compile finishes
+    let polls = 0;
+    const maxPolls = 24; // 2 minutes max
+    const pollInterval = setInterval(async () => {
+        polls++;
+        try {
+            const res = await fetch("/api/wiki/tree");
+            const tree = await res.json();
+            const fileCount = countTreeFiles(tree);
+            if (fileCount > 0 && polls > 1) {
+                clearInterval(pollInterval);
+                showIngestStatus(
+                    "Done! Wiki updated (" + fileCount + " pages).",
+                    "ok"
+                );
+                loadWikiTree();
+            } else if (polls >= maxPolls) {
+                clearInterval(pollInterval);
+                showIngestStatus(
+                    "Compile may still be running. Click R to refresh wiki.",
+                    "ok"
+                );
+                loadWikiTree();
+            } else {
+                showIngestStatus(
+                    "Compiling wiki pages... (" + (polls * 5) + "s)",
+                    "compiling"
+                );
+            }
+        } catch (e) {
+            // ignore poll errors
+        }
+    }, 5000);
+}
+
+function countTreeFiles(node) {
+    if (node.type === "file") return 1;
+    return (node.children || []).reduce((sum, c) => sum + countTreeFiles(c), 0);
 }
 
 function showIngestStatus(msg, type = "") {
     const el = document.getElementById("ingest-status");
     el.classList.remove("hidden");
+    el.className = "ingest-status" +
+        (type === "ok" ? " status-ok" :
+         type === "err" ? " status-err" :
+         type === "loading" ? " status-loading" :
+         type === "compiling" ? " status-compiling" : "");
     el.textContent = msg;
-    el.className = `ingest-status ${type === "ok" ? "status-ok" : type === "err" ? "status-err" : ""}`;
 }
 
 function addIngestEntry(data) {
