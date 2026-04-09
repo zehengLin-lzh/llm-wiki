@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal LLM Wiki</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <header id="status-bar">
+            <span class="logo">&gt; Personal LLM Wiki</span>
+            <span id="machine-name">...</span>
+            <div id="provider-controls">
+                <span id="provider-badge" class="badge">...</span>
+                <div id="provider-switch" class="hidden">
+                    <label class="radio-label">
+                        <input type="radio" name="provider" value="claude"> claude
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="provider" value="ollama"> ollama
+                    </label>
+                </div>
+            </div>
+        </header>
+        <main id="content">
+            <div id="welcome">
+                <pre class="ascii-art">
+ ___  __    __  __   _    _ _ _    _
+| _ \/ /   / / |  \/  |  | | | |  (_)| | _(_)
+|  _/ /___/ /  | |\/| |  | | | | /| || |/ / |
+|_| |_____|_|  |_|  |_|  |___/|_||_||_|\_\___|
+                </pre>
+                <p>Local-first knowledge base powered by LLM compilation</p>
+                <div id="status-info">
+                    <p>Loading system status...</p>
+                </div>
+                <div id="provider-detail" class="hidden">
+                    <h3>&gt; Providers</h3>
+                    <div id="provider-list"></div>
+                    <button id="test-llm-btn" class="btn">Test Current Provider</button>
+                    <div id="test-result" class="hidden"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

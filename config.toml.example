@@ -1,0 +1,27 @@
+# Personal LLM Wiki Configuration
+
+[server]
+host = "127.0.0.1"
+port = 7823
+
+[llm]
+# Which provider to use as primary: "claude" or "ollama"
+primary = "claude"
+
+[llm.claude]
+model = "claude-sonnet-4-6-20250514"
+
+[llm.ollama]
+base_url = "http://localhost:11434"
+model = "qwen3:8b"
+
+[data]
+# Base path for the knowledge base data directory
+base_dir = "data"
+
+[data.snapshot]
+retention = 3
+
+[data.settings]
+auto_compile_on_ingest = true
+lint_schedule = "daily"

@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Project data (separate git repo inside data/)
+data/
+
+# Secrets and local config
+.env
+config.toml
+
+# OS
+.DS_Store
+
+# Testing
+.pytest_cache/
