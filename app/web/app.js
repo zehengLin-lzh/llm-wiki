@@ -258,12 +258,21 @@ async function ingestURL(url, subdir) {
     }
 }
 
-function onIngestSuccess(data) {
+async function onIngestSuccess(data) {
+    // Get baseline file count before compile starts
+    let baselineCount = 0;
+    try {
+        const res = await fetch("/api/wiki/tree");
+        const tree = await res.json();
+        baselineCount = countTreeFiles(tree);
+    } catch (e) {}
+
     showIngestStatus(
         "Ingested: " + data.filename + ". Compiling wiki pages...",
         "compiling"
     );
-    // Poll wiki tree every 5s to detect when compile finishes
+
+    // Poll wiki tree every 5s to detect new files from compile
     let polls = 0;
     const maxPolls = 24; // 2 minutes max
     const pollInterval = setInterval(async () => {
@@ -271,18 +280,19 @@ function onIngestSuccess(data) {
         try {
             const res = await fetch("/api/wiki/tree");
             const tree = await res.json();
-            const fileCount = countTreeFiles(tree);
-            if (fileCount > 0 && polls > 1) {
+            const currentCount = countTreeFiles(tree);
+            if (currentCount > baselineCount) {
                 clearInterval(pollInterval);
+                const newPages = currentCount - baselineCount;
                 showIngestStatus(
-                    "Done! Wiki updated (" + fileCount + " pages).",
+                    "Done! " + newPages + " new wiki page(s) created.",
                     "ok"
                 );
                 loadWikiTree();
             } else if (polls >= maxPolls) {
                 clearInterval(pollInterval);
                 showIngestStatus(
-                    "Compile may still be running. Click R to refresh wiki.",
+                    "Compile may still be running. Click R to refresh.",
                     "ok"
                 );
                 loadWikiTree();
@@ -494,18 +504,39 @@ function escapeHtml(text) {
 // --- Wiki Tree ---
 
 async function loadWikiTree() {
+    const container = document.getElementById("wiki-tree");
+    const btn = document.getElementById("wiki-refresh-btn");
+
+    // Show loading state
+    if (btn) {
+        btn.textContent = "...";
+        btn.disabled = true;
+    }
+    if (container) {
+        container.classList.add("tree-loading");
+    }
+
     try {
         const res = await fetch("/api/wiki/tree");
         const tree = await res.json();
-        const container = document.getElementById("wiki-tree");
         if (!container) return;
-        container.innerHTML = renderTree(tree, "");
+        const html = renderTree(tree, "");
+        container.innerHTML = html || '<span class="tree-empty">No wiki pages yet</span>';
     } catch (err) {
-        // Wiki may be empty on first run
+        if (container) container.innerHTML = '<span class="tree-empty">Failed to load</span>';
+    } finally {
+        if (btn) {
+            btn.textContent = "R";
+            btn.disabled = false;
+        }
+        if (container) container.classList.remove("tree-loading");
     }
 
-    const btn = document.getElementById("wiki-refresh-btn");
-    if (btn) btn.addEventListener("click", loadWikiTree);
+    // Only bind click once
+    if (btn && !btn._bound) {
+        btn.addEventListener("click", loadWikiTree);
+        btn._bound = true;
+    }
 }
 
 function renderTree(node, basePath) {

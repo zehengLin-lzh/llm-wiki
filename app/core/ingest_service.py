@@ -99,9 +99,12 @@ class IngestService:
         frontmatter = self._build_frontmatter(raw_id, result, tags)
         full_content = frontmatter + result.content
 
+        # Include raw_id suffix to avoid filename collisions on re-ingest
+        filename = f"{result.suggested_filename}-{raw_id.split('_')[-1]}"
+
         path = self.file_ops.write_raw(
             subdir=subdir,
-            filename=result.suggested_filename,
+            filename=filename,
             content=full_content,
             reason=f"new {result.source_type} ingest",
         )

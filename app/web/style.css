@@ -186,6 +186,18 @@ body {
     background: var(--accent-light);
 }
 
+.tree-loading {
+    opacity: 0.5;
+}
+
+.tree-empty {
+    color: var(--fg-dim);
+    font-size: 12px;
+    font-style: italic;
+    padding: 8px 0;
+    display: block;
+}
+
 /* Chat Panel (center) */
 #chat-panel {
     flex: 1;
