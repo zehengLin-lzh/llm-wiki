@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.ingest import init_ingest_router
 from app.api.ingest import router as ingest_router
 from app.config import AppState, load_config
+from app.core.compiler import Compiler
 from app.core.file_ops import FileOps
 from app.core.ingest_service import IngestService
 from app.llm.router import ProviderRouter
@@ -46,9 +48,21 @@ router = ProviderRouter(
 # File operations layer
 file_ops = FileOps(config.data_path)
 
+# Compiler
+compiler = Compiler(file_ops)
+
+# Auto-init schema if missing
+TEMPLATES_DIR = Path(__file__).resolve().parent / "schemas" / "templates"
+schema_path = config.data_path / "schema.md"
+if not schema_path.exists():
+    default_template = TEMPLATES_DIR / "coding-knowledge.md"
+    if default_template.exists():
+        shutil.copy2(default_template, schema_path)
+        log.info("schema.init", template="coding-knowledge.md")
+
 # Ingest service
 ingest_service = IngestService(file_ops, machine_name=config.current_machine)
-init_ingest_router(ingest_service)
+init_ingest_router(ingest_service, compiler=compiler, provider_router=router)
 
 
 @asynccontextmanager

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Phase 4: Compiler — Raw to Wiki (2026-04-09)
+- **Added** `app/llm/tools.py` — COMPILER_TOOLS (read/list/create/update/append wiki files) + QUERY_TOOLS (read-only)
+- **Added** `app/core/compiler.py` — `Compiler` class with LLM tool-call loop (up to 20 rounds)
+  - Reads raw source + schema + wiki state, then LLM decides what pages to create/update
+  - Prompt injection defense: raw content treated as data, not instructions
+  - Auto-marks raw frontmatter as `compiled: true` on success, `compile_error` on failure
+- **Added** Schema templates: `coding-knowledge.md`, `research-notes.md`, `blank.md`
+- **Updated** `app/api/ingest.py` — background compilation triggered after each ingest
+- **Updated** `app/main.py` — auto-copies coding-knowledge schema template on first run
+- Tested: ingest text about FastAPI → compiler generates index.md, summary, entity page with cross-refs
+
 ### Phase 3: Ingest Pipeline (2026-04-09)
 - **Added** `app/ingestors/` — 4 ingestors: URL (trafilatura), PDF (pymupdf), Markdown, Text
 - **Added** `app/core/ingest_service.py` — unified ingest entry point with auto ID generation and YAML frontmatter
