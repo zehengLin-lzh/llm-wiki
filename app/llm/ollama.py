@@ -63,13 +63,68 @@ class OllamaProvider(BaseLLMProvider):
             data = resp.json()
             return data.get("message", {}).get("content", "")
 
+    def _convert_messages(self, messages: list[dict]) -> list[dict]:
+        """Convert Claude-style messages (with tool_use/tool_result) to Ollama/OpenAI style."""
+        converted = []
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+
+            # Simple string content — pass through
+            if isinstance(content, str):
+                converted.append(msg)
+                continue
+
+            # List content — Claude-style structured blocks
+            if isinstance(content, list):
+                # Check if this is an assistant message with tool_use blocks
+                tool_uses = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_use"]
+                text_parts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+
+                if tool_uses and role == "assistant":
+                    # Convert to OpenAI-style assistant + tool_calls
+                    ollama_tcs = []
+                    for tu in tool_uses:
+                        ollama_tcs.append({
+                            "function": {
+                                "name": tu["name"],
+                                "arguments": tu.get("input", {}),
+                            },
+                        })
+                    converted.append({
+                        "role": "assistant",
+                        "content": " ".join(text_parts) if text_parts else "",
+                        "tool_calls": ollama_tcs,
+                    })
+                    continue
+
+                # Check if this is a user message with tool_result blocks
+                tool_results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"]
+                if tool_results and role == "user":
+                    for tr in tool_results:
+                        converted.append({
+                            "role": "tool",
+                            "content": tr.get("content", ""),
+                        })
+                    continue
+
+                # Fallback: join text parts
+                converted.append({
+                    "role": role,
+                    "content": " ".join(text_parts) if text_parts else str(content),
+                })
+                continue
+
+            converted.append(msg)
+        return converted
+
     async def tool_call(
         self,
         messages: list[dict],
         tools: list[dict],
         system: str | None = None,
     ) -> ToolCallResult:
-        msgs = list(messages)
+        msgs = self._convert_messages(messages)
         if system:
             msgs.insert(0, {"role": "system", "content": system})
 

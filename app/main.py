@@ -11,12 +11,15 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.chat import init_chat_router
+from app.api.chat import router as chat_router
 from app.api.ingest import init_ingest_router
 from app.api.ingest import router as ingest_router
 from app.config import AppState, load_config
 from app.core.compiler import Compiler
 from app.core.file_ops import FileOps
 from app.core.ingest_service import IngestService
+from app.core.query_engine import QueryEngine
 from app.llm.router import ProviderRouter
 from app.logging_setup import setup_logging
 
@@ -60,6 +63,10 @@ if not schema_path.exists():
         shutil.copy2(default_template, schema_path)
         log.info("schema.init", template="coding-knowledge.md")
 
+# Query engine
+query_engine = QueryEngine(file_ops)
+init_chat_router(query_engine, provider_router=router)
+
 # Ingest service
 ingest_service = IngestService(file_ops, machine_name=config.current_machine)
 init_ingest_router(ingest_service, compiler=compiler, provider_router=router)
@@ -75,6 +82,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Personal LLM Wiki", version="0.1.0", lifespan=lifespan)
 
+app.include_router(chat_router)
 app.include_router(ingest_router)
 
 # Static files must be mounted AFTER routers

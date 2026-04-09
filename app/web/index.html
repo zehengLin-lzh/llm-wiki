@@ -24,42 +24,46 @@
             </div>
         </header>
         <main id="content">
-            <div id="welcome">
-                <pre class="ascii-art">
- ___  __    __  __   _    _ _ _    _
-| _ \/ /   / / |  \/  |  | | | |  (_)| | _(_)
-|  _/ /___/ /  | |\/| |  | | | | /| || |/ / |
-|_| |_____|_|  |_|  |_|  |___/|_||_||_|\_\___|
-                </pre>
-                <p>Local-first knowledge base powered by LLM compilation</p>
-                <div id="status-info">
-                    <p>Loading system status...</p>
-                </div>
-                <div id="provider-detail" class="hidden">
-                    <h3>&gt; Providers</h3>
-                    <div id="provider-list"></div>
-                    <button id="test-llm-btn" class="btn">Test Current Provider</button>
-                    <div id="test-result" class="hidden"></div>
-                </div>
-                <div id="ingest-section">
-                    <h3>&gt; Ingest</h3>
-                    <div id="drop-zone">
-                        <p>Drop files here (PDF, Markdown, Text)</p>
-                        <p class="drop-hint">or use the controls below</p>
+            <div id="main-panels">
+                <!-- Left: Chat -->
+                <div id="chat-panel">
+                    <div id="chat-messages"></div>
+                    <div id="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Ask your wiki..." />
+                        <button id="chat-send-btn" class="btn">Send</button>
                     </div>
-                    <div id="url-ingest">
-                        <input type="text" id="url-input" placeholder="Paste URL here..." />
-                        <select id="subdir-select">
-                            <option value="personal">personal</option>
-                            <option value="work">work</option>
-                            <option value="shared">shared</option>
-                        </select>
-                        <button id="ingest-url-btn" class="btn">Ingest URL</button>
+                </div>
+                <!-- Right: Tools/Ingest -->
+                <div id="side-panel">
+                    <div id="status-info">
+                        <p>Loading...</p>
                     </div>
-                    <div id="ingest-status" class="hidden"></div>
-                    <div id="ingest-history">
-                        <h4>&gt; Recent</h4>
-                        <div id="ingest-list"></div>
+                    <div id="provider-detail" class="hidden">
+                        <h3>&gt; Providers</h3>
+                        <div id="provider-list"></div>
+                        <button id="test-llm-btn" class="btn">Test Current Provider</button>
+                        <div id="test-result" class="hidden"></div>
+                    </div>
+                    <div id="ingest-section">
+                        <h3>&gt; Ingest</h3>
+                        <div id="drop-zone">
+                            <p>Drop files here (PDF, Markdown, Text)</p>
+                            <p class="drop-hint">or use the controls below</p>
+                        </div>
+                        <div id="url-ingest">
+                            <input type="text" id="url-input" placeholder="Paste URL here..." />
+                            <select id="subdir-select">
+                                <option value="personal">personal</option>
+                                <option value="work">work</option>
+                                <option value="shared">shared</option>
+                            </select>
+                            <button id="ingest-url-btn" class="btn">Ingest URL</button>
+                        </div>
+                        <div id="ingest-status" class="hidden"></div>
+                        <div id="ingest-history">
+                            <h4>&gt; Recent</h4>
+                            <div id="ingest-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>

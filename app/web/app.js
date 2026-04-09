@@ -1,9 +1,12 @@
 const ingestHistory = [];
+let chatWs = null;
+let chatHistory = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     loadHealth();
     setupProviderSwitch();
     setupTestButton();
+    setupChat();
     setupDropZone();
     setupURLIngest();
 });
@@ -230,4 +233,163 @@ function renderIngestHistory() {
             <span class="ingest-path">${e.raw_path}</span>
         </div>
     `).join("");
+}
+
+// --- Chat ---
+
+function setupChat() {
+    const input = document.getElementById("chat-input");
+    const btn = document.getElementById("chat-send-btn");
+    if (!input || !btn) return;
+
+    connectChatWs();
+
+    const send = () => {
+        const text = input.value.trim();
+        if (!text || !chatWs || chatWs.readyState !== WebSocket.OPEN) return;
+        input.value = "";
+        appendChatBubble("user", text);
+
+        // Send with history (last 10 turns for context)
+        const recentHistory = chatHistory.slice(-10);
+        chatWs.send(JSON.stringify({
+            type: "user_message",
+            content: text,
+            history: recentHistory,
+        }));
+
+        chatHistory.push({ role: "user", content: text });
+        startAssistantBubble();
+    };
+
+    btn.addEventListener("click", send);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            send();
+        }
+    });
+}
+
+function connectChatWs() {
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    chatWs = new WebSocket(`${protocol}//${location.host}/ws/chat`);
+
+    chatWs.onmessage = (evt) => {
+        const msg = JSON.parse(evt.data);
+        handleChatEvent(msg);
+    };
+
+    chatWs.onclose = () => {
+        setTimeout(connectChatWs, 2000);
+    };
+
+    chatWs.onerror = () => {
+        // Will trigger onclose
+    };
+}
+
+let currentAssistantEl = null;
+let currentToolsEl = null;
+let assistantText = "";
+
+function startAssistantBubble() {
+    assistantText = "";
+    const container = document.getElementById("chat-messages");
+
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble assistant";
+
+    currentToolsEl = document.createElement("div");
+    currentToolsEl.className = "tool-calls";
+    bubble.appendChild(currentToolsEl);
+
+    currentAssistantEl = document.createElement("div");
+    currentAssistantEl.className = "bubble-content";
+    currentAssistantEl.textContent = "Thinking...";
+    bubble.appendChild(currentAssistantEl);
+
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+}
+
+function handleChatEvent(msg) {
+    const container = document.getElementById("chat-messages");
+
+    if (msg.type === "tool_call_started" && currentToolsEl) {
+        const el = document.createElement("div");
+        el.className = "tool-indicator";
+        el.textContent = `Reading ${msg.data.args?.path || msg.data.name}...`;
+        el.id = `tool-${msg.data.name}-${Date.now()}`;
+        currentToolsEl.appendChild(el);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    if (msg.type === "tool_call_finished" && currentToolsEl) {
+        const indicators = currentToolsEl.querySelectorAll(".tool-indicator");
+        const last = indicators[indicators.length - 1];
+        if (last) {
+            last.textContent = `Read ${msg.data.name}: ${msg.data.preview?.substring(0, 60) || "done"}...`;
+            last.classList.add("tool-done");
+        }
+    }
+
+    if (msg.type === "token" && currentAssistantEl) {
+        if (assistantText === "") {
+            currentAssistantEl.textContent = "";
+        }
+        assistantText += msg.data;
+        currentAssistantEl.innerHTML = renderMarkdown(assistantText);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    if (msg.type === "done") {
+        if (assistantText) {
+            chatHistory.push({ role: "assistant", content: assistantText });
+        }
+        currentAssistantEl = null;
+        currentToolsEl = null;
+    }
+
+    if (msg.type === "error") {
+        if (currentAssistantEl) {
+            currentAssistantEl.textContent = `Error: ${msg.data}`;
+            currentAssistantEl.classList.add("chat-error");
+        }
+        currentAssistantEl = null;
+        currentToolsEl = null;
+    }
+}
+
+function appendChatBubble(role, text) {
+    const container = document.getElementById("chat-messages");
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${role}`;
+
+    const content = document.createElement("div");
+    content.className = "bubble-content";
+    content.innerHTML = role === "user" ? escapeHtml(text) : renderMarkdown(text);
+    bubble.appendChild(content);
+
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+}
+
+function renderMarkdown(text) {
+    // Simple markdown rendering
+    return text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="wiki-ref">[$1]</span>')
+        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/\n/g, "<br>");
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

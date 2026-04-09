@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Phase 5: Query Engine + Chat UI (2026-04-09)
+- **Added** `app/core/query_engine.py` — `QueryEngine` with read-only tool-call loop, yields `QueryEvent` stream
+- **Added** `app/api/chat.py` — WebSocket endpoint `/ws/chat` for real-time chat
+- **Added** Chat UI: two-panel layout (chat left, tools/ingest right), streaming bubbles, tool call indicators
+- **Fixed** `app/llm/ollama.py` — message format conversion (Claude-style → OpenAI-style) for multi-round tool calls
+- Query tools are read-only: read_wiki_file, list_wiki_directory, grep_wiki
+- LLM cites wiki files in answers `[wiki/path/file.md]`
+- Chat history maintained client-side, sent with each message for context
+
 ### Phase 4: Compiler — Raw to Wiki (2026-04-09)
 - **Added** `app/llm/tools.py` — COMPILER_TOOLS (read/list/create/update/append wiki files) + QUERY_TOOLS (read-only)
 - **Added** `app/core/compiler.py` — `Compiler` class with LLM tool-call loop (up to 20 rounds)
