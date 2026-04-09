@@ -44,7 +44,7 @@ async def _compile_background(raw_path_str: str) -> None:
         return
     try:
         provider = await _provider_router.get_provider()
-        raw_path = Path(raw_path_str)
+        raw_path = Path(raw_path_str).resolve()
         result = await _compiler.compile_raw_file(raw_path, provider)
         if result.success:
             log.info("compile.background.done", operations=len(result.operations), summary=result.summary[:100])
