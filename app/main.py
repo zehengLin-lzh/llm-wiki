@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import AppState, load_config
+from app.core.file_ops import FileOps
 from app.llm.router import ProviderRouter
 from app.logging_setup import setup_logging
 
@@ -38,6 +39,9 @@ router = ProviderRouter(
     ollama_model=config.llm.ollama.model,
     primary=config.llm.primary,
 )
+
+# File operations layer
+file_ops = FileOps(config.data_path)
 
 
 @asynccontextmanager
