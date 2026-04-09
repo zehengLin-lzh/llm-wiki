@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupChat();
     setupDropZone();
     setupURLIngest();
+    setupMaintenance();
     loadWikiTree();
     setupTabs();
     setupWikiViewer();
@@ -527,4 +528,85 @@ function setupTabs() {
             document.getElementById(targetId)?.classList.add("active");
         });
     });
+}
+
+// --- Maintenance (Snapshot + Lint) ---
+
+function setupMaintenance() {
+    const snapBtn = document.getElementById("snapshot-btn");
+    const lintBtn = document.getElementById("lint-btn");
+
+    if (snapBtn) {
+        snapBtn.addEventListener("click", async () => {
+            showActionStatus("Creating snapshot...");
+            try {
+                const res = await fetch("/api/snapshot/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ reason: "manual" }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showActionStatus(`Snapshot created: ${data.snapshot.id} (${data.snapshot.size_mb}MB)`, "ok");
+                    loadSnapshots();
+                } else {
+                    showActionStatus(`Error: ${data.error}`, "err");
+                }
+            } catch (err) {
+                showActionStatus(`Failed: ${err.message}`, "err");
+            }
+        });
+    }
+
+    if (lintBtn) {
+        lintBtn.addEventListener("click", async () => {
+            showActionStatus("Running lint...");
+            try {
+                const res = await fetch("/api/lint/run", { method: "POST" });
+                const data = await res.json();
+                if (data.ok) {
+                    showActionStatus(`Lint report: ${data.report}`, "ok");
+                    // Refresh wiki tree to show new report
+                    loadWikiTree();
+                    // Open the report
+                    openWikiFile(`_reports/${data.report}`);
+                } else {
+                    showActionStatus(`Error: ${data.error}`, "err");
+                }
+            } catch (err) {
+                showActionStatus(`Failed: ${err.message}`, "err");
+            }
+        });
+    }
+
+    loadSnapshots();
+}
+
+function showActionStatus(msg, type = "") {
+    const el = document.getElementById("action-status");
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.textContent = msg;
+    el.className = `action-status ${type === "ok" ? "status-ok" : type === "err" ? "status-err" : ""}`;
+}
+
+async function loadSnapshots() {
+    try {
+        const res = await fetch("/api/snapshot/list");
+        const data = await res.json();
+        const list = document.getElementById("snapshots-list");
+        if (!list || !data.snapshots) return;
+        if (data.snapshots.length === 0) {
+            list.innerHTML = '<p class="dim-text">No snapshots yet</p>';
+            return;
+        }
+        list.innerHTML = '<h4>> Snapshots</h4>' + data.snapshots.map(s => `
+            <div class="snapshot-entry">
+                <span class="snapshot-id">${s.id}</span>
+                <span class="snapshot-size">${s.size_mb}MB</span>
+            </div>
+        `).join("");
+    } catch (err) {
+        // ignore
+    }
 }

@@ -21,7 +21,9 @@ from app.config import AppState, load_config
 from app.core.compiler import Compiler
 from app.core.file_ops import FileOps
 from app.core.ingest_service import IngestService
+from app.core.lint import LintWorker
 from app.core.query_engine import QueryEngine
+from app.core.snapshot import SnapshotManager
 from app.llm.router import ProviderRouter
 from app.logging_setup import setup_logging
 
@@ -72,6 +74,10 @@ init_chat_router(query_engine, provider_router=router)
 # Wiki browser
 init_wiki_router(file_ops)
 
+# Snapshot + Lint
+snapshot_mgr = SnapshotManager(config.data_path)
+lint_worker = LintWorker(file_ops)
+
 # Ingest service
 ingest_service = IngestService(file_ops, machine_name=config.current_machine)
 init_ingest_router(ingest_service, compiler=compiler, provider_router=router)
@@ -81,6 +87,16 @@ init_ingest_router(ingest_service, compiler=compiler, provider_router=router)
 async def lifespan(app: FastAPI):
     # Startup: probe all providers
     await router.probe_all()
+
+    # Auto-snapshot on startup if stale
+    if snapshot_mgr.should_create(max_age_hours=24):
+        try:
+            snap = snapshot_mgr.create(reason="startup")
+            snapshot_mgr.prune(keep_n=config.data.snapshot.retention)
+            log.info("snapshot.startup", id=snap.id)
+        except Exception as e:
+            log.warning("snapshot.startup.failed", error=str(e))
+
     log.info("app.startup.complete", providers=router.get_info().model_dump())
     yield
 
@@ -184,3 +200,42 @@ async def test_llm():
             "model": provider.model,
             "error": str(e),
         }
+
+
+# --- Snapshot endpoints ---
+
+@app.post("/api/snapshot/create")
+async def create_snapshot(body: dict | None = None):
+    reason = (body or {}).get("reason", "manual")
+    try:
+        snap = snapshot_mgr.create(reason=reason)
+        snapshot_mgr.prune(keep_n=config.data.snapshot.retention)
+        return {"ok": True, "snapshot": snap.model_dump()}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/snapshot/list")
+async def list_snapshots():
+    return {"snapshots": [s.model_dump() for s in snapshot_mgr.list_snapshots()]}
+
+
+# --- Lint endpoints ---
+
+@app.post("/api/lint/run")
+async def run_lint():
+    try:
+        filename = lint_worker.run_and_save()
+        return {"ok": True, "report": filename}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/lint/latest")
+async def latest_lint():
+    reports = file_ops.list_wiki("_reports")
+    if not reports:
+        return {"ok": False, "error": "No lint reports yet"}
+    latest = reports[-1]
+    content = latest.read_text(encoding="utf-8")
+    return {"ok": True, "filename": latest.name, "content": content}

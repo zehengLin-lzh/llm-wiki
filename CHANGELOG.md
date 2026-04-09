@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Phase 7: Snapshot + Lint Worker (2026-04-09)
+- **Added** `app/core/snapshot.py` — `SnapshotManager`: create/list/prune data snapshots
+  - Auto-snapshot on startup if last snapshot > 24h old
+  - Prune keeps most recent N snapshots (configurable, default 3)
+- **Added** `app/core/lint.py` — `LintWorker`: 3 checks + markdown report generation
+  - Orphan pages (no incoming links)
+  - Dead links (point to non-existent files)
+  - Missing summaries (raw files without wiki summary)
+  - Reports saved to `wiki/_reports/{date}-lint.md`
+- **Added** API endpoints: `POST /api/snapshot/create`, `GET /api/snapshot/list`, `POST /api/lint/run`, `GET /api/lint/latest`
+- **Added** Settings tab: "Create Snapshot" + "Run Lint" buttons, snapshot list display
+
 ### Phase 6: Full Frontend — Wiki Browser + Settings (2026-04-09)
 - **Added** `app/api/wiki.py` — `GET /api/wiki/tree`, `/api/wiki/file`, `/api/wiki/rendered` endpoints
 - **Added** Three-column layout: wiki sidebar (left) + chat (center) + ingest/settings tabs (right)
