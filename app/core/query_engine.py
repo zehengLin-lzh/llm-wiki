@@ -18,19 +18,23 @@ You are a research assistant for the user's personal wiki. Your job is to answer
 
 Tools available: read_wiki_file, list_wiki_directory, grep_wiki.
 
+## IMPORTANT: Always read files before answering
+You MUST use read_wiki_file to read relevant wiki pages BEFORE answering.
+The wiki state provided in the user message shows what files exist — use the tools to read their full content.
+Do NOT answer based only on file names or the index — always read the actual pages.
+
 ## Workflow
-1. Start by reading wiki/index.md to understand what's available
-2. Decide which files to read based on the question
-3. Use grep_wiki for keyword searches when you don't know exact paths
-4. Cite the wiki files you used in your answer (format: [wiki/path/file.md])
-5. If the wiki doesn't have enough info, say so — don't invent answers
-6. Keep answers concise and direct, like a knowledgeable colleague
+1. Look at the wiki state to identify relevant files
+2. Use read_wiki_file to read those files (e.g. read_wiki_file with path "entities/fastapi.md")
+3. Use grep_wiki if you need to search for keywords
+4. Answer based on the content you read, citing sources as [wiki/path/file.md]
+5. If the wiki genuinely doesn't have info on the topic, say so
 
 ## Rules
-- ONLY use information from the wiki files you read
-- Always cite sources
-- If you can't find relevant info, say "I don't have information about that in the wiki"
-- Never fabricate content
+- ALWAYS read at least one wiki file before answering
+- Cite the wiki files you used
+- Keep answers concise and direct
+- Never fabricate content not found in wiki files
 """
 
 MAX_QUERY_ROUNDS = 10
@@ -53,6 +57,24 @@ class QueryEngine:
     def __init__(self, file_ops: FileOps):
         self.file_ops = file_ops
 
+    def _build_context(self) -> str:
+        """Pre-load wiki index and structure so the LLM has context from the start."""
+        parts = []
+
+        # Index content
+        index = self.file_ops.read_wiki("index.md")
+        if index:
+            parts.append(f"## Current wiki/index.md\n\n{index}")
+
+        # Wiki file listing
+        for subdir in ["concepts", "entities", "summaries"]:
+            files = self.file_ops.list_wiki(subdir)
+            if files:
+                names = [f.name for f in files]
+                parts.append(f"wiki/{subdir}/: {', '.join(names)}")
+
+        return "\n\n".join(parts) if parts else "(Wiki is empty)"
+
     async def query(
         self,
         user_message: str,
@@ -61,8 +83,17 @@ class QueryEngine:
     ) -> AsyncIterator[QueryEvent]:
         """Process a query, yielding events as they happen."""
 
+        # Pre-load wiki context so LLM has something to work with immediately
+        context = self._build_context()
+        augmented_message = (
+            f"{user_message}\n\n"
+            f"---\n"
+            f"Here is the current wiki state for reference:\n\n{context}\n\n"
+            f"Use the tools to read specific wiki files for detailed information before answering."
+        )
+
         # Build messages: history + new message
-        messages = list(history) + [{"role": "user", "content": user_message}]
+        messages = list(history) + [{"role": "user", "content": augmented_message}]
 
         try:
             for round_num in range(MAX_QUERY_ROUNDS):
