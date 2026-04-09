@@ -54,7 +54,7 @@ class OllamaProvider(BaseLLMProvider):
         if system:
             msgs.insert(0, {"role": "system", "content": system})
 
-        async with self._client(timeout=120) as client:
+        async with self._client(timeout=300) as client:
             resp = await client.post(
                 "/api/chat",
                 json={"model": self.model, "messages": msgs, "stream": False},
@@ -140,7 +140,7 @@ class OllamaProvider(BaseLLMProvider):
                 },
             })
 
-        async with self._client(timeout=120) as client:
+        async with self._client(timeout=300) as client:
             resp = await client.post(
                 "/api/chat",
                 json={
@@ -148,6 +148,9 @@ class OllamaProvider(BaseLLMProvider):
                     "messages": msgs,
                     "tools": ollama_tools,
                     "stream": False,
+                    "options": {
+                        "num_ctx": 16384,
+                    },
                 },
             )
             resp.raise_for_status()

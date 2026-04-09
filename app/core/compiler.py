@@ -130,15 +130,21 @@ class Compiler:
 
                 # Check if done
                 if "COMPILATION_COMPLETE" in tc_result.text:
-                    result.success = True
+                    # Only count as success if we actually created/updated wiki pages
+                    write_ops = [o for o in result.operations if any(w in o for w in ["create:", "update:", "append:"])]
+                    result.success = len(write_ops) > 0
                     result.summary = tc_result.text.replace("COMPILATION_COMPLETE", "").strip()
+                    if not result.success:
+                        result.error = "LLM said done but made no wiki changes"
                     break
 
                 if not tc_result.tool_calls and tc_result.stop_reason != "tool_use":
-                    # LLM stopped without tool calls or completion signal
-                    if tc_result.text:
-                        result.success = True
-                        result.summary = tc_result.text
+                    # LLM stopped without tool calls — not a success
+                    result.summary = tc_result.text or ""
+                    log.warning("compiler.no_tool_calls", round=round_num, text=tc_result.text[:200] if tc_result.text else "")
+                    # If first round and no tools called, the model isn't cooperating
+                    if round_num == 0:
+                        result.error = "LLM did not call any tools"
                     break
 
                 # Execute tool calls
@@ -270,7 +276,15 @@ class Compiler:
         else:
             parts.append("## Current index.md\n\n(Does not exist yet — you should create it.)\n")
 
-        parts.append(f"## Raw Source Content\n\n```\n{raw_content}\n```\n")
+        # Truncate long content to stay within model context limits
+        # Ollama models (8b/14b) struggle with tool calling when prompt is too long
+        max_content_chars = 6000
+        display_content = raw_content
+        if len(raw_content) > max_content_chars:
+            display_content = raw_content[:max_content_chars] + f"\n\n[... content truncated at {max_content_chars} chars out of {len(raw_content)} total ...]"
+            log.info("compiler.content_truncated", raw_id=raw_id, original=len(raw_content), truncated=max_content_chars)
+
+        parts.append(f"## Raw Source Content\n\n```\n{display_content}\n```\n")
         parts.append(
             "\nNow read the schema and wiki state, then compile this raw source. "
             "Create/update the appropriate wiki pages. When done, say COMPILATION_COMPLETE."
