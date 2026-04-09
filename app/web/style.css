@@ -397,11 +397,11 @@ body {
 }
 
 /* Settings & Info */
-#settings-provider, #settings-info {
+#settings-provider, #settings-info, #model-selectors {
     margin-bottom: 16px;
 }
 
-#settings-provider h4, #settings-info h4, #ingest-history h4 {
+#settings-provider h4, #settings-info h4, #ingest-history h4, #model-selectors h4 {
     color: var(--fg-dim);
     font-size: 12px;
     margin-bottom: 8px;
@@ -411,6 +411,35 @@ body {
     display: flex;
     gap: 12px;
     margin: 8px 0;
+}
+
+.model-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.model-label {
+    color: var(--fg-dim);
+    font-size: 12px;
+    min-width: 55px;
+}
+
+.model-select {
+    flex: 1;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: 3px;
+}
+
+.model-select:focus {
+    border-color: var(--fg-dim);
+    outline: none;
 }
 
 #status-info {

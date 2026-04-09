@@ -65,8 +65,7 @@
                 <!-- Settings Tab -->
                 <div id="tab-settings" class="tab-content">
                     <div id="settings-provider">
-                        <h4>&gt; Provider</h4>
-                        <div id="provider-list"></div>
+                        <h4>&gt; Active Provider</h4>
                         <div id="provider-radios">
                             <label class="radio-label">
                                 <input type="radio" name="provider" value="claude"> claude
@@ -75,9 +74,21 @@
                                 <input type="radio" name="provider" value="ollama"> ollama
                             </label>
                         </div>
-                        <button id="test-llm-btn" class="btn">Test Provider</button>
-                        <div id="test-result" class="hidden"></div>
+                        <div id="provider-list"></div>
                     </div>
+                    <div id="model-selectors">
+                        <h4>&gt; Models</h4>
+                        <div class="model-row">
+                            <span class="model-label">Claude:</span>
+                            <select id="claude-model-select" class="model-select"></select>
+                        </div>
+                        <div class="model-row">
+                            <span class="model-label">Ollama:</span>
+                            <select id="ollama-model-select" class="model-select"></select>
+                        </div>
+                    </div>
+                    <button id="test-llm-btn" class="btn">Test Provider</button>
+                    <div id="test-result" class="hidden"></div>
                     <div id="settings-info">
                         <h4>&gt; System</h4>
                         <div id="status-info"><p>Loading...</p></div>

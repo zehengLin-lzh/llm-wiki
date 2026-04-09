@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import httpx
 import structlog
 
 from app.llm.base import BaseLLMProvider
@@ -8,6 +9,12 @@ from app.llm.ollama import OllamaProvider
 from app.schemas.models import ProviderStatus, ProvidersInfo
 
 log = structlog.get_logger()
+
+CLAUDE_MODELS = [
+    "claude-sonnet-4-6-20250514",
+    "claude-opus-4-6-20250610",
+    "claude-haiku-4-5-20251001",
+]
 
 
 class ProviderRouter:
@@ -101,6 +108,43 @@ class ProviderRouter:
 
         # Both unavailable, return primary anyway (let it fail with a real error)
         return primary
+
+    async def set_model(self, provider_name: str, model: str) -> ProviderStatus:
+        """Change the model for a provider."""
+        if provider_name not in self._providers:
+            raise ValueError(f"Unknown provider: {provider_name}")
+        self._providers[provider_name].model = model
+        # Re-probe
+        ok, msg = await self._providers[provider_name].available()
+        self._statuses[provider_name] = ProviderStatus(
+            name=provider_name,
+            model=model,
+            available=ok,
+            status_message=msg,
+        )
+        log.info("provider.model_changed", provider=provider_name, model=model, available=ok)
+        return self._statuses[provider_name]
+
+    async def list_available_models(self) -> dict[str, list[str]]:
+        """List available models for each provider."""
+        result: dict[str, list[str]] = {}
+
+        # Claude: static list
+        result["claude"] = list(CLAUDE_MODELS)
+
+        # Ollama: fetch from API
+        ollama = self._providers.get("ollama")
+        if ollama and isinstance(ollama, OllamaProvider):
+            try:
+                async with httpx.AsyncClient(base_url=ollama.base_url, timeout=5) as client:
+                    resp = await client.get("/api/tags")
+                    resp.raise_for_status()
+                    data = resp.json()
+                    result["ollama"] = [m["name"] for m in data.get("models", [])]
+            except Exception:
+                result["ollama"] = []
+
+        return result
 
     def get_info(self) -> ProvidersInfo:
         """Get current provider information."""

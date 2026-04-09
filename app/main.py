@@ -141,6 +141,28 @@ async def switch_provider(body: dict):
         return {"ok": False, "error": str(e)}
 
 
+@app.get("/api/models")
+async def list_models():
+    """List available models for each provider."""
+    models = await router.list_available_models()
+    info = router.get_info()
+    current_models = {}
+    for p in info.providers:
+        current_models[p.name] = p.model
+    return {"models": models, "current": current_models}
+
+
+@app.post("/api/settings/model")
+async def switch_model(body: dict):
+    provider_name = body.get("provider", "")
+    model = body.get("model", "")
+    try:
+        status = await router.set_model(provider_name, model)
+        return {"ok": True, "provider": status.model_dump()}
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/api/test-llm")
 async def test_llm():
     """Quick test: ask the current provider a simple question."""

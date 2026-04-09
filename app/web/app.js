@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadHealth();
     setupProviderSwitch();
     setupTestButton();
+    setupModelSelectors();
     setupChat();
     setupDropZone();
     setupURLIngest();
@@ -96,6 +97,49 @@ function setupProviderSwitch() {
             }
         });
     });
+}
+
+async function setupModelSelectors() {
+    try {
+        const res = await fetch("/api/models");
+        const data = await res.json();
+
+        // Claude models
+        const claudeSelect = document.getElementById("claude-model-select");
+        if (claudeSelect && data.models.claude) {
+            claudeSelect.innerHTML = data.models.claude.map(m =>
+                `<option value="${m}" ${m === data.current.claude ? 'selected' : ''}>${m}</option>`
+            ).join("");
+            claudeSelect.addEventListener("change", () => switchModel("claude", claudeSelect.value));
+        }
+
+        // Ollama models
+        const ollamaSelect = document.getElementById("ollama-model-select");
+        if (ollamaSelect && data.models.ollama) {
+            ollamaSelect.innerHTML = data.models.ollama.map(m =>
+                `<option value="${m}" ${m === data.current.ollama ? 'selected' : ''}>${m}</option>`
+            ).join("");
+            ollamaSelect.addEventListener("change", () => switchModel("ollama", ollamaSelect.value));
+        }
+    } catch (err) {
+        // Models endpoint may not be ready yet
+    }
+}
+
+async function switchModel(provider, model) {
+    try {
+        const res = await fetch("/api/settings/model", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider, model }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+            await loadHealth();
+        }
+    } catch (err) {
+        console.error("Failed to switch model:", err);
+    }
 }
 
 function setupTestButton() {
