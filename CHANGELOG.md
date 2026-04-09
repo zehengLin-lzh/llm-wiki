@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Phase 8: E2E Testing + Documentation (2026-04-09)
+- **Added** `tests/test_providers.py` — 10 tests: provider init, probe, switch, fallback, message conversion
+- **Added** `tests/test_compiler.py` — 14 tests: tool execution, frontmatter parsing, wiki structure
+- **Added** `tests/test_e2e.py` — 16 tests: ingest lifecycle, lint lifecycle, snapshot lifecycle, full cycle
+- **Updated** `README.md` — complete documentation: architecture, features, API reference, config guide
+- **Total**: 60 tests, all passing
+
 ### Phase 7: Snapshot + Lint Worker (2026-04-09)
 - **Added** `app/core/snapshot.py` — `SnapshotManager`: create/list/prune data snapshots
   - Auto-snapshot on startup if last snapshot > 24h old
