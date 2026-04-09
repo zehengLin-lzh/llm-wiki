@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
     setupChat();
     setupDropZone();
     setupURLIngest();
+    loadWikiTree();
+    setupTabs();
+    setupWikiViewer();
 });
 
 async function loadHealth() {
@@ -44,10 +47,8 @@ async function loadHealth() {
 }
 
 function renderProviders(providers, current) {
-    const detail = document.getElementById("provider-detail");
-    detail.classList.remove("hidden");
-
     const list = document.getElementById("provider-list");
+    if (!list) return;
     list.innerHTML = providers.map(p => `
         <div class="provider-row ${p.name === current ? 'active' : ''}">
             <span class="provider-indicator ${p.available ? 'indicator-ok' : 'indicator-err'}"></span>
@@ -59,10 +60,12 @@ function renderProviders(providers, current) {
     `).join("");
 
     // Update radio buttons
-    const switchEl = document.getElementById("provider-switch");
-    switchEl.classList.remove("hidden");
-    const radios = switchEl.querySelectorAll('input[name="provider"]');
+    const radios = document.querySelectorAll('input[name="provider"]');
     radios.forEach(r => { r.checked = r.value === current; });
+
+    // Update wiki stats badge
+    const statsEl = document.getElementById("wiki-stats");
+    if (statsEl) statsEl.textContent = current;
 }
 
 function setupProviderSwitch() {
@@ -392,4 +395,92 @@ function renderMarkdown(text) {
 
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// --- Wiki Tree ---
+
+async function loadWikiTree() {
+    try {
+        const res = await fetch("/api/wiki/tree");
+        const tree = await res.json();
+        const container = document.getElementById("wiki-tree");
+        if (!container) return;
+        container.innerHTML = renderTree(tree, "");
+    } catch (err) {
+        // Wiki may be empty on first run
+    }
+
+    const btn = document.getElementById("wiki-refresh-btn");
+    if (btn) btn.addEventListener("click", loadWikiTree);
+}
+
+function renderTree(node, basePath) {
+    if (node.type === "file") {
+        const path = basePath ? `${basePath}/${node.name}` : node.name;
+        return `<span class="tree-file" data-path="${path}" onclick="openWikiFile('${path}')">${node.name}</span>`;
+    }
+
+    if (!node.children || node.children.length === 0) return "";
+
+    const dirName = node.name === "wiki" ? "" : node.name;
+    const childPath = basePath ? `${basePath}/${node.name}` : node.name;
+    const childrenHtml = node.children
+        .map(c => renderTree(c, node.name === "wiki" ? "" : childPath))
+        .filter(Boolean)
+        .join("");
+
+    if (node.name === "wiki") {
+        return childrenHtml;
+    }
+
+    return `<div class="tree-dir">
+        <div class="tree-dir-name">${node.name}/</div>
+        <div class="tree-children">${childrenHtml}</div>
+    </div>`;
+}
+
+// --- Wiki Viewer ---
+
+function setupWikiViewer() {
+    const closeBtn = document.getElementById("wiki-viewer-close");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            document.getElementById("wiki-viewer").classList.add("hidden");
+        });
+    }
+}
+
+async function openWikiFile(path) {
+    try {
+        const res = await fetch(`/api/wiki/rendered?path=${encodeURIComponent(path)}`);
+        const data = await res.json();
+        if (!data.ok) return;
+
+        document.getElementById("wiki-viewer-title").textContent = path;
+        document.getElementById("wiki-viewer-content").innerHTML = data.html;
+        document.getElementById("wiki-viewer").classList.remove("hidden");
+    } catch (err) {
+        console.error("Failed to load wiki file:", err);
+    }
+}
+
+// Global function for wiki links in rendered content
+function viewWikiLink(href) {
+    // Normalize relative paths
+    const clean = href.replace(/^\.\.\//g, "").replace(/^\.\//, "");
+    openWikiFile(clean);
+}
+
+// --- Tabs ---
+
+function setupTabs() {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.dataset.tab;
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            btn.classList.add("active");
+            document.getElementById(targetId)?.classList.add("active");
+        });
+    });
 }

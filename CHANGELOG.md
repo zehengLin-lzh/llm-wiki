@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Phase 6: Full Frontend — Wiki Browser + Settings (2026-04-09)
+- **Added** `app/api/wiki.py` — `GET /api/wiki/tree`, `/api/wiki/file`, `/api/wiki/rendered` endpoints
+- **Added** Three-column layout: wiki sidebar (left) + chat (center) + ingest/settings tabs (right)
+- **Added** Wiki tree browser: expandable directory tree, click to view rendered file
+- **Added** Wiki viewer: overlay panel with rendered markdown, clickable internal links
+- **Added** Tab system: Ingest tab + Settings tab in right sidebar
+- **Added** Settings tab: provider list, radio switch, test button, system info
+- **Skipped** Alpine.js/Pico.css — vanilla JS stays lean and sufficient
+- Server-side markdown → HTML rendering with heading, list, code, link support
+
 ### Phase 5: Query Engine + Chat UI (2026-04-09)
 - **Added** `app/core/query_engine.py` — `QueryEngine` with read-only tool-call loop, yields `QueryEvent` stream
 - **Added** `app/api/chat.py` — WebSocket endpoint `/ws/chat` for real-time chat

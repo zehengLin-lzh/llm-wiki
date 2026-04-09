@@ -15,6 +15,8 @@ from app.api.chat import init_chat_router
 from app.api.chat import router as chat_router
 from app.api.ingest import init_ingest_router
 from app.api.ingest import router as ingest_router
+from app.api.wiki import init_wiki_router
+from app.api.wiki import router as wiki_router
 from app.config import AppState, load_config
 from app.core.compiler import Compiler
 from app.core.file_ops import FileOps
@@ -67,6 +69,9 @@ if not schema_path.exists():
 query_engine = QueryEngine(file_ops)
 init_chat_router(query_engine, provider_router=router)
 
+# Wiki browser
+init_wiki_router(file_ops)
+
 # Ingest service
 ingest_service = IngestService(file_ops, machine_name=config.current_machine)
 init_ingest_router(ingest_service, compiler=compiler, provider_router=router)
@@ -83,6 +88,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Personal LLM Wiki", version="0.1.0", lifespan=lifespan)
 
 app.include_router(chat_router)
+app.include_router(wiki_router)
 app.include_router(ingest_router)
 
 # Static files must be mounted AFTER routers

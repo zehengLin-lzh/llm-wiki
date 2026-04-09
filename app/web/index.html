@@ -11,61 +11,87 @@
         <header id="status-bar">
             <span class="logo">&gt; Personal LLM Wiki</span>
             <span id="machine-name">...</span>
-            <div id="provider-controls">
-                <span id="provider-badge" class="badge">...</span>
-                <div id="provider-switch" class="hidden">
-                    <label class="radio-label">
-                        <input type="radio" name="provider" value="claude"> claude
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="provider" value="ollama"> ollama
-                    </label>
-                </div>
-            </div>
+            <span id="wiki-stats" class="badge">...</span>
+            <span id="provider-badge" class="badge">...</span>
         </header>
         <main id="content">
-            <div id="main-panels">
-                <!-- Left: Chat -->
-                <div id="chat-panel">
-                    <div id="chat-messages"></div>
-                    <div id="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="Ask your wiki..." />
-                        <button id="chat-send-btn" class="btn">Send</button>
+            <!-- Left sidebar: Wiki Browser -->
+            <aside id="wiki-sidebar">
+                <div id="wiki-header">
+                    <h3>&gt; Wiki</h3>
+                    <button id="wiki-refresh-btn" class="btn-sm" title="Refresh">R</button>
+                </div>
+                <div id="wiki-tree"></div>
+            </aside>
+
+            <!-- Center: Chat -->
+            <div id="chat-panel">
+                <div id="chat-messages"></div>
+                <div id="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Ask your wiki..." />
+                    <button id="chat-send-btn" class="btn">Send</button>
+                </div>
+            </div>
+
+            <!-- Right sidebar: Tabs (Ingest / Settings) -->
+            <aside id="right-sidebar">
+                <div id="right-tabs">
+                    <button class="tab-btn active" data-tab="tab-ingest">Ingest</button>
+                    <button class="tab-btn" data-tab="tab-settings">Settings</button>
+                </div>
+
+                <!-- Ingest Tab -->
+                <div id="tab-ingest" class="tab-content active">
+                    <div id="drop-zone">
+                        <p>Drop files here</p>
+                        <p class="drop-hint">PDF, Markdown, Text</p>
+                    </div>
+                    <div id="url-ingest">
+                        <input type="text" id="url-input" placeholder="Paste URL..." />
+                        <select id="subdir-select">
+                            <option value="personal">personal</option>
+                            <option value="work">work</option>
+                            <option value="shared">shared</option>
+                        </select>
+                        <button id="ingest-url-btn" class="btn">Go</button>
+                    </div>
+                    <div id="ingest-status" class="hidden"></div>
+                    <div id="ingest-history">
+                        <h4>&gt; Recent</h4>
+                        <div id="ingest-list"></div>
                     </div>
                 </div>
-                <!-- Right: Tools/Ingest -->
-                <div id="side-panel">
-                    <div id="status-info">
-                        <p>Loading...</p>
-                    </div>
-                    <div id="provider-detail" class="hidden">
-                        <h3>&gt; Providers</h3>
+
+                <!-- Settings Tab -->
+                <div id="tab-settings" class="tab-content">
+                    <div id="settings-provider">
+                        <h4>&gt; Provider</h4>
                         <div id="provider-list"></div>
-                        <button id="test-llm-btn" class="btn">Test Current Provider</button>
+                        <div id="provider-radios">
+                            <label class="radio-label">
+                                <input type="radio" name="provider" value="claude"> claude
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="provider" value="ollama"> ollama
+                            </label>
+                        </div>
+                        <button id="test-llm-btn" class="btn">Test Provider</button>
                         <div id="test-result" class="hidden"></div>
                     </div>
-                    <div id="ingest-section">
-                        <h3>&gt; Ingest</h3>
-                        <div id="drop-zone">
-                            <p>Drop files here (PDF, Markdown, Text)</p>
-                            <p class="drop-hint">or use the controls below</p>
-                        </div>
-                        <div id="url-ingest">
-                            <input type="text" id="url-input" placeholder="Paste URL here..." />
-                            <select id="subdir-select">
-                                <option value="personal">personal</option>
-                                <option value="work">work</option>
-                                <option value="shared">shared</option>
-                            </select>
-                            <button id="ingest-url-btn" class="btn">Ingest URL</button>
-                        </div>
-                        <div id="ingest-status" class="hidden"></div>
-                        <div id="ingest-history">
-                            <h4>&gt; Recent</h4>
-                            <div id="ingest-list"></div>
-                        </div>
+                    <div id="settings-info">
+                        <h4>&gt; System</h4>
+                        <div id="status-info"><p>Loading...</p></div>
                     </div>
                 </div>
+            </aside>
+
+            <!-- Wiki file viewer modal -->
+            <div id="wiki-viewer" class="hidden">
+                <div id="wiki-viewer-header">
+                    <span id="wiki-viewer-title"></span>
+                    <button id="wiki-viewer-close" class="btn-sm">X</button>
+                </div>
+                <div id="wiki-viewer-content"></div>
             </div>
         </main>
     </div>
