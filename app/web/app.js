@@ -1,7 +1,11 @@
+const ingestHistory = [];
+
 document.addEventListener("DOMContentLoaded", () => {
     loadHealth();
     setupProviderSwitch();
     setupTestButton();
+    setupDropZone();
+    setupURLIngest();
 });
 
 async function loadHealth() {
@@ -113,4 +117,117 @@ function setupTestButton() {
             resultEl.className = "test-result test-err";
         }
     });
+}
+
+// --- Ingest ---
+
+function setupDropZone() {
+    const zone = document.getElementById("drop-zone");
+    if (!zone) return;
+
+    zone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        zone.classList.add("drag-over");
+    });
+
+    zone.addEventListener("dragleave", () => {
+        zone.classList.remove("drag-over");
+    });
+
+    zone.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+
+        const files = e.dataTransfer.files;
+        if (files.length === 0) return;
+
+        const subdir = document.getElementById("subdir-select").value;
+        for (const file of files) {
+            await uploadFile(file, subdir);
+        }
+    });
+}
+
+function setupURLIngest() {
+    const btn = document.getElementById("ingest-url-btn");
+    const input = document.getElementById("url-input");
+    if (!btn || !input) return;
+
+    const doIngest = async () => {
+        const url = input.value.trim();
+        if (!url) return;
+        input.value = "";
+        const subdir = document.getElementById("subdir-select").value;
+        await ingestURL(url, subdir);
+    };
+
+    btn.addEventListener("click", doIngest);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doIngest();
+    });
+}
+
+async function uploadFile(file, subdir) {
+    showIngestStatus(`Ingesting ${file.name}...`);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("subdir", subdir);
+
+    try {
+        const res = await fetch("/api/ingest/file", { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.ok) {
+            addIngestEntry(data);
+            showIngestStatus(`Ingested: ${data.filename}`, "ok");
+        } else {
+            showIngestStatus(`Error: ${data.error}`, "err");
+        }
+    } catch (err) {
+        showIngestStatus(`Failed: ${err.message}`, "err");
+    }
+}
+
+async function ingestURL(url, subdir) {
+    showIngestStatus(`Ingesting URL...`);
+    try {
+        const res = await fetch("/api/ingest/url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, subdir }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+            addIngestEntry(data);
+            showIngestStatus(`Ingested: ${data.filename}`, "ok");
+        } else {
+            showIngestStatus(`Error: ${data.error}`, "err");
+        }
+    } catch (err) {
+        showIngestStatus(`Failed: ${err.message}`, "err");
+    }
+}
+
+function showIngestStatus(msg, type = "") {
+    const el = document.getElementById("ingest-status");
+    el.classList.remove("hidden");
+    el.textContent = msg;
+    el.className = `ingest-status ${type === "ok" ? "status-ok" : type === "err" ? "status-err" : ""}`;
+}
+
+function addIngestEntry(data) {
+    ingestHistory.unshift(data);
+    if (ingestHistory.length > 5) ingestHistory.pop();
+    renderIngestHistory();
+}
+
+function renderIngestHistory() {
+    const list = document.getElementById("ingest-list");
+    if (!list) return;
+    list.innerHTML = ingestHistory.map(e => `
+        <div class="ingest-entry">
+            <span class="ingest-type">[${e.source_type}]</span>
+            <span class="ingest-file">${e.filename}</span>
+            <span class="ingest-path">${e.raw_path}</span>
+        </div>
+    `).join("");
 }

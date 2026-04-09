@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Phase 3: Ingest Pipeline (2026-04-09)
+- **Added** `app/ingestors/` — 4 ingestors: URL (trafilatura), PDF (pymupdf), Markdown, Text
+- **Added** `app/core/ingest_service.py` — unified ingest entry point with auto ID generation and YAML frontmatter
+- **Added** `app/api/ingest.py` — API endpoints: `POST /api/ingest/url`, `/api/ingest/file`, `/api/ingest/text`
+- **Added** Frontend drop zone: drag & drop files, paste URL, subdirectory selector, ingest history
+- **Added** `pyyaml` dependency for frontmatter serialization
+- Each ingested file gets: unique ID, source metadata, machine name, `compiled: false` status
+- All ingests auto-commit to the data/ git repo
+
 ### Phase 2: File Operations + Git Version Control (2026-04-09)
 - **Added** `app/core/file_ops.py` — `FileOps` class with controlled read/write for raw and wiki files
   - Raw files are append-only (RawImmutableError on overwrite attempt)

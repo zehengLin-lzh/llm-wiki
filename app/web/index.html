@@ -41,6 +41,27 @@
                     <button id="test-llm-btn" class="btn">Test Current Provider</button>
                     <div id="test-result" class="hidden"></div>
                 </div>
+                <div id="ingest-section">
+                    <h3>&gt; Ingest</h3>
+                    <div id="drop-zone">
+                        <p>Drop files here (PDF, Markdown, Text)</p>
+                        <p class="drop-hint">or use the controls below</p>
+                    </div>
+                    <div id="url-ingest">
+                        <input type="text" id="url-input" placeholder="Paste URL here..." />
+                        <select id="subdir-select">
+                            <option value="personal">personal</option>
+                            <option value="work">work</option>
+                            <option value="shared">shared</option>
+                        </select>
+                        <button id="ingest-url-btn" class="btn">Ingest URL</button>
+                    </div>
+                    <div id="ingest-status" class="hidden"></div>
+                    <div id="ingest-history">
+                        <h4>&gt; Recent</h4>
+                        <div id="ingest-list"></div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
