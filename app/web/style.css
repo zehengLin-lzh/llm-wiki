@@ -30,13 +30,14 @@ body {
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.6;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 #app {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
 }
 
 /* Status Bar */
@@ -164,12 +165,28 @@ body {
     letter-spacing: 0.5px;
 }
 
+.tree-dir-name::before {
+    content: '\25BE';
+    display: inline-block;
+    width: 14px;
+    font-size: 10px;
+    transition: transform 0.15s;
+}
+
+.tree-dir.collapsed > .tree-dir-name::before {
+    transform: rotate(-90deg);
+}
+
 .tree-dir-name:hover {
     color: var(--accent);
 }
 
 .tree-children {
     padding-left: 14px;
+}
+
+.tree-dir.collapsed > .tree-children {
+    display: none;
 }
 
 .tree-file {
@@ -206,6 +223,27 @@ body {
     min-width: 0;
 }
 
+/* Sidebar Toggle Strip */
+#sidebar-toggle {
+    width: 24px;
+    flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--fg-dim);
+    font-size: 18px;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+#sidebar-toggle:hover {
+    background: var(--border-light);
+    color: var(--fg);
+}
+
 /* Right Sidebar */
 #right-sidebar {
     width: 340px;
@@ -215,6 +253,13 @@ body {
     flex-direction: column;
     overflow: hidden;
     background: var(--bg);
+    transition: width 0.2s;
+}
+
+#right-sidebar.collapsed {
+    width: 0;
+    border-left: none;
+    overflow: hidden;
 }
 
 #right-tabs {
@@ -263,7 +308,7 @@ body {
     position: fixed;
     top: 44px;
     left: 220px;
-    right: 340px;
+    right: 0;
     bottom: 0;
     background: var(--bg);
     z-index: 100;
